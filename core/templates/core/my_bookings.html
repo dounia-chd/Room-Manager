@@ -1,0 +1,167 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Mes réservations</h2>
+    
+    {% if bookings %}
+    <div class="row">
+        {% for booking in bookings %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header {% if booking.status == 'validated' %}bg-success{% elif booking.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %} text-white">
+                    <h5 class="mb-0">Réservation #{{ booking.id }}</h5>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ booking.room.name }}</h5>
+                    <p class="card-text">
+                        <strong>Date:</strong> {{ booking.date }}<br>
+                        <strong>Heure:</strong> {{ booking.start_time }} - {{ booking.end_time }}<br>
+                        <strong>Statut:</strong> 
+                        {% if booking.status == 'validated' %}
+                            <span class="badge bg-success">Validée</span>
+                        {% elif booking.status == 'pending' %}
+                            <span class="badge bg-warning">En attente</span>
+                        {% elif booking.status == 'in_progress' %}
+                            <span class="badge bg-info">En cours</span>
+                        {% else %}
+                            <span class="badge bg-danger">Annulée</span>
+                        {% endif %}<br>
+                        <strong>Montant:</strong> {{ booking.total_amount }}€<br>
+                        <strong>Paiement:</strong>
+                        {% if booking.payment_status %}
+                            <span class="badge bg-success">Payé</span>
+                        {% else %}
+                            <span class="badge bg-danger">En attente</span>
+                        {% endif %}
+                    </p>
+                    <div class="btn-group">
+                        <!-- Debug info -->
+                        <small class="text-muted d-block mb-2">
+                            Statut: {{ booking.status }}<br>
+                            Est en attente: {% if booking.status == 'pending' %}Oui{% else %}Non{% endif %}
+                        </small>
+                        
+                        {% if booking.status == 'pending' %}
+                            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editBookingModal{{ booking.id }}">
+                                <i class="fas fa-edit"></i> Modifier
+                            </button>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteBookingModal{{ booking.id }}">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        {% endif %}
+                        {% if booking.status == 'validated' and booking.payment_status %}
+                            <a href="{% url 'core:payment_receipt' booking.id %}" class="btn btn-info">
+                                <i class="fas fa-file-invoice"></i> Voir le reçu
+                            </a>
+                            <a href="{% url 'core:download_receipt' booking.id %}" class="btn btn-primary">
+                                <i class="fas fa-download"></i> Télécharger
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de modification -->
+        <div class="modal fade" id="editBookingModal{{ booking.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Modifier la réservation</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="post" action="{% url 'core:edit_booking' booking.id %}">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" class="form-control" name="date" value="{{ booking.date|date:'Y-m-d' }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Heure de début</label>
+                                <input type="time" class="form-control" name="start_time" value="{{ booking.start_time|time:'H:i' }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Heure de fin</label>
+                                <input type="time" class="form-control" name="end_time" value="{{ booking.end_time|time:'H:i' }}" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de suppression -->
+        <div class="modal fade" id="deleteBookingModal{{ booking.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirmer la suppression</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Êtes-vous sûr de vouloir supprimer cette réservation ?</p>
+                        <p><strong>Salle :</strong> {{ booking.room.name }}</p>
+                        <p><strong>Date :</strong> {{ booking.date|date:"d/m/Y" }}</p>
+                        <p><strong>Horaires :</strong> {{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</p>
+                        <p class="text-danger">Cette action est irréversible.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <form method="post" action="{% url 'core:delete_booking' booking.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Supprimer</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Vous n'avez aucune réservation pour le moment.
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-group {
+    gap: 0.5rem;
+}
+
+.btn-group .btn {
+    border-radius: 0.25rem;
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.badge {
+    font-size: 0.9em;
+    padding: 0.5em 0.8em;
+}
+</style>
+{% endblock %} 

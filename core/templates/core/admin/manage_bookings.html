@@ -1,0 +1,248 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Réservations - ROOM MANAGER{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gestion des Réservations</h2>
+        <a href="{% url 'core:download_bookings_list' %}" class="btn btn-primary">
+            <i class="fas fa-download me-2"></i>Télécharger la liste
+        </a>
+        <div class="stats">
+            {% for status, count in booking_stats.items %}
+            <span class="badge {% if status == 'pending' %}bg-warning{% elif status == 'in_progress' %}bg-info{% elif status == 'validated' %}bg-success{% else %}bg-danger{% endif %}">
+                {{ status|title }}: {{ count }}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <select class="form-select" id="statusFilter">
+                <option value="">Tous les statuts</option>
+                {% for status, label in status_choices %}
+                <option value="{{ status }}" {% if request.GET.status == status %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select" id="dateFilter">
+                <option value="">Toutes les dates</option>
+                <option value="today">Aujourd'hui</option>
+                <option value="week">Cette semaine</option>
+                <option value="month">Ce mois</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchBooking" placeholder="Rechercher...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des réservations -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Salle</th>
+                            <th>Date</th>
+                            <th>Horaires</th>
+                            <th>Montant</th>
+                            <th>Paiement</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in bookings %}
+                        <tr>
+                            <td>
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#viewUserModal{{ booking.user.id }}" class="text-decoration-none">
+                                    {{ booking.user.username }}
+                                </a>
+                            </td>
+                            <td>{{ booking.room.name }}</td>
+                            <td>{{ booking.date|date:"d/m/Y" }}</td>
+                            <td>{{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</td>
+                            <td>{{ booking.total_amount }}€</td>
+                            <td>
+                                <span class="badge {% if booking.payment_status %}bg-success{% else %}bg-warning{% endif %}">
+                                    {{ booking.payment_status|yesno:"Payé,En attente" }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge {% if booking.status == 'pending' %}bg-warning
+                                                 {% elif booking.status == 'in_progress' %}bg-info
+                                                 {% elif booking.status == 'validated' %}bg-success
+                                                 {% else %}bg-danger{% endif %}">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#viewBookingModal{{ booking.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editStatusModal{{ booking.id }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteBookingModal{{ booking.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Modal de détails réservation -->
+                        <div class="modal fade" id="viewBookingModal{{ booking.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Détails de la réservation</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <h6>Informations réservation</h6>
+                                            <p><strong>Salle:</strong> {{ booking.room.name }}</p>
+                                            <p><strong>Date:</strong> {{ booking.date|date:"d/m/Y" }}</p>
+                                            <p><strong>Horaires:</strong> {{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</p>
+                                            <p><strong>Montant:</strong> {{ booking.total_amount }}€</p>
+                                            <p><strong>Statut:</strong> {{ booking.get_status_display }}</p>
+                                            <p><strong>Paiement:</strong> {{ booking.payment_status|yesno:"Payé,En attente" }}</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <h6>Informations client</h6>
+                                            <p><strong>Nom:</strong> {{ booking.user.username }}</p>
+                                            <p><strong>Email:</strong> {{ booking.user.email }}</p>
+                                            <p><strong>Téléphone:</strong> {{ booking.user.phone_number|default:"Non renseigné" }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal de modification du statut -->
+                        <div class="modal fade" id="editStatusModal{{ booking.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Modifier le statut</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <div class="modal-body">
+                                            <input type="hidden" name="booking_id" value="{{ booking.id }}">
+                                            <div class="mb-3">
+                                                <label class="form-label">Nouveau statut</label>
+                                                <select class="form-select" name="status" required>
+                                                    {% for status, label in status_choices %}
+                                                    <option value="{{ status }}" {% if status == booking.status %}selected{% endif %}>
+                                                        {{ label }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal de confirmation de suppression -->
+                        <div class="modal fade" id="deleteBookingModal{{ booking.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Confirmer la suppression</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Êtes-vous sûr de vouloir supprimer la réservation de {{ booking.user.username }} pour la salle {{ booking.room.name }} du {{ booking.date|date:"d/m/Y" }} ?</p>
+                                        <p class="text-danger">Cette action est irréversible.</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                        <form method="post" action="{% url 'core:delete_booking' booking.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger">Supprimer</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-calendar fa-3x mb-3"></i>
+                                    <p>Aucune réservation trouvée.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFilter = document.getElementById('dateFilter');
+    const searchInput = document.getElementById('searchBooking');
+    const tableRows = document.querySelectorAll('tbody tr');
+
+    function filterBookings() {
+        const selectedStatus = statusFilter.value;
+        const selectedDate = dateFilter.value;
+        const searchText = searchInput.value.toLowerCase();
+
+        tableRows.forEach(row => {
+            const statusCell = row.querySelector('td:nth-child(7)');
+            const clientCell = row.querySelector('td:nth-child(1)');
+            const roomCell = row.querySelector('td:nth-child(2)');
+            const dateCell = row.querySelector('td:nth-child(3)');
+            
+            if (!statusCell || !clientCell || !roomCell || !dateCell) return;
+
+            const statusMatch = !selectedStatus || statusCell.textContent.trim().toLowerCase().includes(selectedStatus.toLowerCase());
+            const searchMatch = !searchText || 
+                              clientCell.textContent.toLowerCase().includes(searchText) ||
+                              roomCell.textContent.toLowerCase().includes(searchText);
+
+            row.style.display = statusMatch && searchMatch ? '' : 'none';
+        });
+    }
+
+    statusFilter.addEventListener('change', filterBookings);
+    dateFilter.addEventListener('change', filterBookings);
+    searchInput.addEventListener('input', filterBookings);
+});
+</script>
+{% endblock %}
+{% endblock %}

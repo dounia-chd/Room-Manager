@@ -1,0 +1,60 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Reçu de paiement{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="mb-3">Reçu de paiement</h2>
+                        <p class="text-muted">Votre paiement a été confirmé avec succès</p>
+                    </div>
+
+                    <div class="receipt-details">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5>Détails de la réservation</h5>
+                                <p class="mb-1"><strong>Numéro de réservation:</strong> #{{ booking.id }}</p>
+                                <p class="mb-1"><strong>Date:</strong> {{ booking.date }}</p>
+                                <p class="mb-1"><strong>Heure:</strong> {{ booking.time }}</p>
+                                <p class="mb-1"><strong>Salle:</strong> {{ booking.room.name }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Détails du paiement</h5>
+                                <p class="mb-1"><strong>Montant total:</strong> {{ booking.total_amount }} €</p>
+                                <p class="mb-1"><strong>Date du paiement:</strong> {{ booking.updated_at|date:"d/m/Y H:i" }}</p>
+                                <p class="mb-1"><strong>Statut:</strong> <span class="badge bg-success">Payé</span></p>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <a href="{% url 'download_receipt' booking.id %}" class="btn btn-primary">
+                                <i class="fas fa-download me-2"></i>Télécharger le reçu
+                            </a>
+                            <a href="{% url 'my_bookings' %}" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-arrow-left me-2"></i>Retour aux réservations
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .receipt-details {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+    }
+    .badge {
+        font-size: 0.9em;
+        padding: 5px 10px;
+    }
+</style>
+{% endblock %} 

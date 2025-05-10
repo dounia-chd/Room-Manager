@@ -1,0 +1,63 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Paiement de la réservation</h4>
+                </div>
+                <div class="card-body">
+                    <div class="booking-details mb-4">
+                        <h5>Détails de la réservation</h5>
+                        <p><strong>Salle:</strong> {{ booking.room.name }}</p>
+                        <p><strong>Date:</strong> {{ booking.date }}</p>
+                        <p><strong>Heure:</strong> {{ booking.start_time }} - {{ booking.end_time }}</p>
+                        <p><strong>Montant total:</strong> {{ booking.total_amount }}€</p>
+                    </div>
+
+                    <form method="post" class="payment-form">
+                        {% csrf_token %}
+                        <div class="form-group mb-3">
+                            <label for="card_number">Numéro de carte</label>
+                            <input type="text" class="form-control" id="card_number" placeholder="1234 5678 9012 3456" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="expiry">Date d'expiration</label>
+                                    <input type="text" class="form-control" id="expiry" placeholder="MM/AA" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="cvv">CVV</label>
+                                    <input type="text" class="form-control" id="cvv" placeholder="123" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="card_name">Nom sur la carte</label>
+                            <input type="text" class="form-control" id="card_name" placeholder="John Doe" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Payer {{ booking.total_amount }}€</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.querySelector('.payment-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    // Ici, vous pouvez ajouter la logique de validation de la carte
+    // Pour l'instant, on soumet simplement le formulaire
+    this.submit();
+});
+</script>
+{% endblock %}
+{% endblock %} 

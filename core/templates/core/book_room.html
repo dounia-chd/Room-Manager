@@ -1,0 +1,168 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Réservation - {{ room.name }} - ROOM MANAGER{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Réservation de {{ room.name }}</h2>
+                    
+                    <div class="mb-4">
+                        <h5>Détails de la salle</h5>
+                        <div class="row">
+                            {% if room.image %}
+                            <div class="col-md-4">
+                                <img src="{{ room.image.url }}" class="img-fluid rounded" alt="{{ room.name }}">
+                            </div>
+                            {% endif %}
+                            <div class="col">
+                                <p><strong>Type:</strong> {{ room.room_type.name }}</p>
+                                <p><strong>Capacité:</strong> {{ room.capacity }} personnes</p>
+                                <p><strong>Prix par heure:</strong> {{ room.price_per_hour }} €</p>
+                                <p><strong>Description:</strong> {{ room.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="date" class="form-label">Date de réservation</label>
+                                <input type="date" class="form-control" id="date" name="date" required min="{{ today|date:'Y-m-d' }}">
+                                <div class="invalid-feedback">
+                                    Veuillez sélectionner une date valide.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="start_time" class="form-label">Heure de début</label>
+                                <input type="time" class="form-control" id="start_time" name="start_time" required>
+                                <div class="invalid-feedback">
+                                    Veuillez sélectionner une heure de début.
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="end_time" class="form-label">Heure de fin</label>
+                                <input type="time" class="form-control" id="end_time" name="end_time" required>
+                                <div class="invalid-feedback">
+                                    Veuillez sélectionner une heure de fin.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label">Motif de la réservation</label>
+                            <textarea class="form-control" id="purpose" name="purpose" rows="3" required></textarea>
+                            <div class="invalid-feedback">
+                                Veuillez indiquer le motif de votre réservation.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="number_of_people" class="form-label">Nombre de personnes</label>
+                            <input type="number" class="form-control" id="number_of_people" name="number_of_people" min="1" max="{{ room.capacity }}" required>
+                            <div class="invalid-feedback">
+                                Le nombre de personnes doit être entre 1 et {{ room.capacity }}.
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5>Équipement nécessaire</h5>
+                            <div class="row">
+                                {% for equipment in room.equipment.all %}
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="equipment" value="{{ equipment.id }}" id="equipment_{{ equipment.id }}">
+                                        <label class="form-check-label" for="equipment_{{ equipment.id }}">
+                                            {{ equipment.name }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading">Informations importantes</h5>
+                            <p class="mb-0">Le montant total sera calculé en fonction de la durée de réservation et du prix horaire de la salle.</p>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-calendar-check me-2"></i>Confirmer la réservation
+                            </button>
+                            <a href="{% url 'core:room_detail' room.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Retour aux détails
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Réservations existantes</h5>
+                    <div class="list-group list-group-flush">
+                        {% for booking in existing_bookings %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ booking.date|date:"d/m/Y" }}</h6>
+                                <small class="text-muted">{{ booking.get_status_display }}</small>
+                            </div>
+                            <p class="mb-1">{{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</p>
+                            <small class="text-muted">{{ booking.purpose|truncatechars:50 }}</small>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item">
+                            <p class="text-muted mb-0">Aucune réservation existante pour cette salle.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation du formulaire
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+
+    // Validation des heures
+    const startTime = document.getElementById('start_time');
+    const endTime = document.getElementById('end_time');
+
+    function validateTimes() {
+        if (startTime.value && endTime.value) {
+            if (startTime.value >= endTime.value) {
+                endTime.setCustomValidity('L\'heure de fin doit être après l\'heure de début');
+            } else {
+                endTime.setCustomValidity('');
+            }
+        }
+    }
+
+    startTime.addEventListener('change', validateTimes);
+    endTime.addEventListener('change', validateTimes);
+});
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,63 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Connexion - ROOM MANAGER{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center mb-0">Connexion</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Connexion Client -->
+                        <div class="col-md-6 border-end">
+                            <h4 class="text-center mb-4">Espace Client</h4>
+                            <form method="post" action="{% url 'core:login' %}?type=client">
+                                {% csrf_token %}
+                                <input type="hidden" name="user_type" value="client">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Nom d'utilisateur</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Mot de passe</label>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">Se connecter</button>
+                                </div>
+                            </form>
+                            <div class="text-center mt-3">
+                                <p>Pas encore de compte ? <a href="{% url 'core:register' %}">S'inscrire</a></p>
+                            </div>
+                        </div>
+
+                        <!-- Connexion Administrateur -->
+                        <div class="col-md-6">
+                            <h4 class="text-center mb-4">Espace Administrateur</h4>
+                            <form method="post" action="{% url 'core:login' %}?type=admin">
+                                {% csrf_token %}
+                                <input type="hidden" name="user_type" value="admin">
+                                <div class="mb-3">
+                                    <label for="admin_username" class="form-label">Nom d'utilisateur</label>
+                                    <input type="text" class="form-control" id="admin_username" name="username" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="admin_password" class="form-label">Mot de passe</label>
+                                    <input type="password" class="form-control" id="admin_password" name="password" required>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-danger">Se connecter</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

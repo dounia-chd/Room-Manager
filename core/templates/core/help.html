@@ -1,0 +1,125 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Aide - ROOM MANAGER{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Centre d'aide</h1>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="#general" class="list-group-item list-group-item-action active" data-bs-toggle="list">Informations générales</a>
+                <a href="#reservation" class="list-group-item list-group-item-action" data-bs-toggle="list">Comment réserver</a>
+                <a href="#payment" class="list-group-item list-group-item-action" data-bs-toggle="list">Paiement</a>
+                <a href="#cancel" class="list-group-item list-group-item-action" data-bs-toggle="list">Annulation</a>
+                <a href="#faq" class="list-group-item list-group-item-action" data-bs-toggle="list">FAQ</a>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="general">
+                    <h3>Informations générales</h3>
+                    <p>ROOM MANAGER est une plateforme de réservation de salles en ligne. Nous proposons différents types de salles pour répondre à vos besoins :</p>
+                    <ul>
+                        <li>Salles de réunion</li>
+                        <li>Salles de sport</li>
+                        <li>Salles d'études</li>
+                        <li>Et bien plus encore...</li>
+                    </ul>
+                </div>
+
+                <div class="tab-pane fade" id="reservation">
+                    <h3>Comment réserver une salle</h3>
+                    <ol>
+                        <li>Créez un compte ou connectez-vous</li>
+                        <li>Parcourez les différents types de salles disponibles</li>
+                        <li>Sélectionnez une salle qui vous intéresse</li>
+                        <li>Choisissez la date et l'heure de votre réservation</li>
+                        <li>Confirmez votre réservation</li>
+                        <li>Procédez au paiement</li>
+                    </ol>
+                </div>
+
+                <div class="tab-pane fade" id="payment">
+                    <h3>Paiement</h3>
+                    <p>Nous acceptons plusieurs modes de paiement :</p>
+                    <ul>
+                        <li>Carte bancaire (Visa, Mastercard)</li>
+                        <li>PayPal</li>
+                        <li>Virement bancaire</li>
+                    </ul>
+                    <p>Le paiement est sécurisé et vous recevrez une confirmation par email.</p>
+                </div>
+
+                <div class="tab-pane fade" id="cancel">
+                    <h3>Politique d'annulation</h3>
+                    <p>Vous pouvez annuler votre réservation :</p>
+                    <ul>
+                        <li>Gratuitement jusqu'à 48h avant la date de réservation</li>
+                        <li>Avec des frais de 50% jusqu'à 24h avant</li>
+                        <li>Aucun remboursement pour les annulations de dernière minute</li>
+                    </ul>
+                </div>
+
+                <div class="tab-pane fade" id="faq">
+                    <h3>Questions fréquentes</h3>
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h4 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    Comment modifier ma réservation ?
+                                </button>
+                            </h4>
+                            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Vous pouvez modifier votre réservation depuis votre tableau de bord jusqu'à 24h avant la date prévue.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h4 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    Que faire en cas de problème technique ?
+                                </button>
+                            </h4>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Contactez notre support technique via le formulaire de contact ou par téléphone.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h4 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    Les prix incluent-ils les équipements ?
+                                </button>
+                            </h4>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Oui, les prix incluent l'utilisation des équipements de base mentionnés dans la description de la salle.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Activer les onglets Bootstrap
+    var triggerTabList = [].slice.call(document.querySelectorAll('.list-group-item'))
+    triggerTabList.forEach(function(triggerEl) {
+        new bootstrap.Tab(triggerEl)
+    })
+})
+</script>
+{% endblock %}

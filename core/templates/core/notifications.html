@@ -1,0 +1,86 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Notifications - ROOM MANAGER{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Notifications</h2>
+        {% if unread_count > 0 %}
+        <span class="badge bg-primary">{{ unread_count }} non lue(s)</span>
+        {% endif %}
+    </div>
+
+    {% if notifications %}
+    <div class="row">
+        {% for notification in notifications %}
+        <div class="col-12 mb-3">
+            <div class="card {% if not notification.read %}border-primary{% endif %}">
+                <div class="card-header d-flex justify-content-between align-items-center {% if not notification.read %}bg-primary text-white{% endif %}">
+                    <h5 class="mb-0">{{ notification.title }}</h5>
+                    <small>{{ notification.created_at|date:"d/m/Y H:i" }}</small>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ notification.message|linebreaks }}</p>
+                    <div class="btn-group">
+                        {% if not notification.read %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="notification_id" value="{{ notification.id }}">
+                            <input type="hidden" name="action" value="mark_read">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Marquer comme lue
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="notification_id" value="{{ notification.id }}">
+                            <input type="hidden" name="action" value="delete">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette notification ?')">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Vous n'avez aucune notification.
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-group {
+    gap: 0.5rem;
+}
+
+.btn-group .btn {
+    border-radius: 0.25rem;
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+</style>
+{% endblock %} 

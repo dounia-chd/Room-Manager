@@ -1,0 +1,614 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Salles - ROOM MANAGER{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gestion des Salles</h2>
+        <a href="{% url 'core:download_rooms_list' %}" class="btn btn-primary">
+            <i class="fas fa-download me-2"></i>Télécharger la liste
+        </a>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoomModal">
+            <i class="fas fa-plus"></i> Ajouter une salle
+        </button>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <select class="form-select" id="typeFilter">
+                <option value="">Tous les types</option>
+                {% for room_type in room_types %}
+                    <option value="{{ room_type.id }}">{{ room_type.get_category_display }} - {{ room_type.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select" id="equipmentFilter">
+                <option value="">Tous les équipements</option>
+                {% for equipment in equipments %}
+                    <option value="{{ equipment.id }}">{{ equipment.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchRoom" placeholder="Rechercher une salle...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des salles -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>Capacité</th>
+                            <th>Prix/heure</th>
+                            <th>Équipements</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for room in rooms %}
+                        <tr>
+                            <td>{{ room.name }}</td>
+                            <td>{{ room.room_type.get_category_display }} - {{ room.room_type.name }}</td>
+                            <td>{{ room.capacity }} personnes</td>
+                            <td>{{ room.price_per_hour }}€</td>
+                            <td>
+                                {% for equipment in room.equipment.all %}
+                                <span class="badge bg-info me-1">
+                                    <i class="{{ equipment.icon }}"></i> {{ equipment.name }}
+                                </span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <span class="badge {% if room.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ room.is_active|yesno:"Active,Inactive" }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editRoomModal{{ room.id }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <form method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="room_id" value="{{ room.id }}">
+                                        <input type="hidden" name="action" value="toggle_active">
+                                        <button type="submit" class="btn btn-sm {% if room.is_active %}btn-danger{% else %}btn-success{% endif %}">
+                                            <i class="fas {% if room.is_active %}fa-times{% else %}fa-check{% endif %}"></i>
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteRoomModal{{ room.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Modal de suppression -->
+                        <div class="modal fade" id="deleteRoomModal{{ room.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Confirmer la suppression</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Êtes-vous sûr de vouloir supprimer la salle "{{ room.name }}" ?</p>
+                                        <p class="text-danger">Cette action est irréversible.</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                        <form method="post" action="{% url 'core:delete_room' room.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger">Supprimer</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal d'édition -->
+                        <div class="modal fade" id="editRoomModal{{ room.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Modifier la salle</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="post" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        <div class="modal-body">
+                                            <input type="hidden" name="room_id" value="{{ room.id }}">
+                                            <input type="hidden" name="action" value="edit">
+                                            <div class="mb-3">
+                                                <label class="form-label">Nom</label>
+                                                <input type="text" class="form-control" name="name" value="{{ room.name }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Type de salle</label>
+                                                <select class="form-select" name="room_type" required>
+                                                    {% for room_type in room_types %}
+                                                    <option value="{{ room_type.id }}" {% if room_type.id == room.room_type.id %}selected{% endif %}>
+                                                        {{ room_type.get_category_display }} - {{ room_type.name }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Capacité</label>
+                                                <input type="number" class="form-control" name="capacity" value="{{ room.capacity }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Prix par heure</label>
+                                                <input type="number" step="0.01" class="form-control" name="price_per_hour" value="{{ room.price_per_hour }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Description</label>
+                                                <textarea class="form-control" name="description" rows="3" required>{{ room.description }}</textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Image</label>
+                                                <input type="file" class="form-control" name="image" accept="image/*">
+                                                {% if room.image %}
+                                                <small class="text-muted">Image actuelle : {{ room.image.name }}</small>
+                                                {% endif %}
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Équipements</label>
+                                                <div class="accordion" id="editEquipmentAccordion{{ room.id }}">
+                                                    <!-- Équipements généraux -->
+                                                    <div class="accordion-item">
+                                                        <h2 class="accordion-header">
+                                                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#editGeneralEquipment{{ room.id }}">
+                                                                Équipements généraux
+                                                            </button>
+                                                        </h2>
+                                                        <div id="editGeneralEquipment{{ room.id }}" class="accordion-collapse collapse show" data-bs-parent="#editEquipmentAccordion{{ room.id }}">
+                                                            <div class="accordion-body">
+                                                                <div class="row">
+                                                                    {% for equipment in equipments %}
+                                                                        {% if equipment.name == 'Climatisation' or equipment.name == 'WiFi' or equipment.name == 'Éclairage' %}
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" name="equipment" value="{{ equipment.id }}" id="editEquipment{{ room.id }}_{{ equipment.id }}" {% if equipment in room.equipment.all %}checked{% endif %}>
+                                                                                <label class="form-check-label" for="editEquipment{{ room.id }}_{{ equipment.id }}">
+                                                                                    <i class="{{ equipment.icon }}"></i> {{ equipment.name }}
+                                                                                </label>
+                                                                            </div>
+                                                                        </div>
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Équipements Entreprises -->
+                                                    <div class="accordion-item">
+                                                        <h2 class="accordion-header">
+                                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#editEnterpriseEquipment{{ room.id }}">
+                                                                Équipements Entreprises
+                                                            </button>
+                                                        </h2>
+                                                        <div id="editEnterpriseEquipment{{ room.id }}" class="accordion-collapse collapse" data-bs-parent="#editEquipmentAccordion{{ room.id }}">
+                                                            <div class="accordion-body">
+                                                                <div class="row">
+                                                                    {% for equipment in equipments %}
+                                                                        {% if equipment.name == 'Projecteur' or equipment.name == 'Tableau blanc' or equipment.name == 'Système audio' or equipment.name == 'Écran TV' or equipment.name == 'Tables de réunion' or equipment.name == 'Chaises confortables' %}
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" name="equipment" value="{{ equipment.id }}" id="editEquipment{{ room.id }}_{{ equipment.id }}" {% if equipment in room.equipment.all %}checked{% endif %}>
+                                                                                <label class="form-check-label" for="editEquipment{{ room.id }}_{{ equipment.id }}">
+                                                                                    <i class="{{ equipment.icon }}"></i> {{ equipment.name }}
+                                                                                </label>
+                                                                            </div>
+                                                                        </div>
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Équipements Universités -->
+                                                    <div class="accordion-item">
+                                                        <h2 class="accordion-header">
+                                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#editUniversityEquipment{{ room.id }}">
+                                                                Équipements Universités
+                                                            </button>
+                                                        </h2>
+                                                        <div id="editUniversityEquipment{{ room.id }}" class="accordion-collapse collapse" data-bs-parent="#editEquipmentAccordion{{ room.id }}">
+                                                            <div class="accordion-body">
+                                                                <div class="row">
+                                                                    {% for equipment in equipments %}
+                                                                        {% if equipment.name == 'Tableau interactif' or equipment.name == 'Ordinateurs' or equipment.name == 'Microscope' or equipment.name == 'Équipement de laboratoire' or equipment.name == 'Bancs d\'expérimentation' %}
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" name="equipment" value="{{ equipment.id }}" id="editEquipment{{ room.id }}_{{ equipment.id }}" {% if equipment in room.equipment.all %}checked{% endif %}>
+                                                                                <label class="form-check-label" for="editEquipment{{ room.id }}_{{ equipment.id }}">
+                                                                                    <i class="{{ equipment.icon }}"></i> {{ equipment.name }}
+                                                                                </label>
+                                                                            </div>
+                                                                        </div>
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Équipements Hôtels -->
+                                                    <div class="accordion-item">
+                                                        <h2 class="accordion-header">
+                                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#editHotelEquipment{{ room.id }}">
+                                                                Équipements Hôtels
+                                                            </button>
+                                                        </h2>
+                                                        <div id="editHotelEquipment{{ room.id }}" class="accordion-collapse collapse" data-bs-parent="#editEquipmentAccordion{{ room.id }}">
+                                                            <div class="accordion-body">
+                                                                <div class="row">
+                                                                    {% for equipment in equipments %}
+                                                                        {% if equipment.name == 'Service traiteur' or equipment.name == 'Décoration événementielle' or equipment.name == 'Système de sonorisation' or equipment.name == 'Éclairage d\'ambiance' or equipment.name == 'Service hôtelier' %}
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" name="equipment" value="{{ equipment.id }}" id="editEquipment{{ room.id }}_{{ equipment.id }}" {% if equipment in room.equipment.all %}checked{% endif %}>
+                                                                                <label class="form-check-label" for="editEquipment{{ room.id }}_{{ equipment.id }}">
+                                                                                    <i class="{{ equipment.icon }}"></i> {{ equipment.name }}
+                                                                                </label>
+                                                                            </div>
+                                                                        </div>
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Équipements Sports -->
+                                                    <div class="accordion-item">
+                                                        <h2 class="accordion-header">
+                                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#editSportEquipment{{ room.id }}">
+                                                                Équipements Sports
+                                                            </button>
+                                                        </h2>
+                                                        <div id="editSportEquipment{{ room.id }}" class="accordion-collapse collapse" data-bs-parent="#editEquipmentAccordion{{ room.id }}">
+                                                            <div class="accordion-body">
+                                                                <div class="row">
+                                                                    {% for equipment in equipments %}
+                                                                        {% if equipment.name == 'Matériel de sport' or equipment.name == 'Tapis de yoga' or equipment.name == 'Miroirs' or equipment.name == 'Barres de danse' or equipment.name == 'Vestiaires' %}
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" name="equipment" value="{{ equipment.id }}" id="editEquipment{{ room.id }}_{{ equipment.id }}" {% if equipment in room.equipment.all %}checked{% endif %}>
+                                                                                <label class="form-check-label" for="editEquipment{{ room.id }}_{{ equipment.id }}">
+                                                                                    <i class="{{ equipment.icon }}"></i> {{ equipment.name }}
+                                                                                </label>
+                                                                            </div>
+                                                                        </div>
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-door-open fa-3x mb-3"></i>
+                                    <p>Aucune salle trouvée.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'ajout -->
+<div class="modal fade" id="addRoomModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter une salle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add">
+                    <div class="mb-3">
+                        <label class="form-label">Nom</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Catégorie</label>
+                        <select class="form-select" id="categorySelect" required>
+                            <option value="">Sélectionnez une catégorie</option>
+                            <option value="enterprise">Entreprises</option>
+                            <option value="university">Universités</option>
+                            <option value="hotel">Hôtels</option>
+                            <option value="sport">Sports</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type de salle</label>
+                        <select class="form-select" name="room_type" id="roomTypeSelect" required>
+                            <option value="">Sélectionnez d'abord une catégorie</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Capacité</label>
+                        <input type="number" class="form-control" name="capacity" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Prix par heure</label>
+                        <input type="number" step="0.01" class="form-control" name="price_per_hour" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Image</label>
+                        <input type="file" class="form-control" name="image" accept="image/*" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Équipements</label>
+                        <div class="accordion" id="equipmentAccordion">
+                            <!-- Équipements généraux -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#generalEquipment">
+                                        Équipements généraux
+                                    </button>
+                                </h2>
+                                <div id="generalEquipment" class="accordion-collapse collapse show" data-bs-parent="#equipmentAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            {% for equipment in equipments %}
+                                                {% if equipment.name == 'Climatisation' or equipment.name == 'WiFi' or equipment.name == 'Éclairage' %}
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="equipment" value="{{ equipment.id }}" id="equipment{{ equipment.id }}">
+                                                        <label class="form-check-label" for="equipment{{ equipment.id }}">
+                                                            <i class="{{ equipment.icon }}"></i> {{ equipment.name }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Équipements Entreprises -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#enterpriseEquipment">
+                                        Équipements Entreprises
+                                    </button>
+                                </h2>
+                                <div id="enterpriseEquipment" class="accordion-collapse collapse" data-bs-parent="#equipmentAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            {% for equipment in equipments %}
+                                                {% if equipment.name == 'Projecteur' or equipment.name == 'Tableau blanc' or equipment.name == 'Système audio' or equipment.name == 'Écran TV' or equipment.name == 'Tables de réunion' or equipment.name == 'Chaises confortables' %}
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="equipment" value="{{ equipment.id }}" id="equipment{{ equipment.id }}">
+                                                        <label class="form-check-label" for="equipment{{ equipment.id }}">
+                                                            <i class="{{ equipment.icon }}"></i> {{ equipment.name }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Équipements Universités -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#universityEquipment">
+                                        Équipements Universités
+                                    </button>
+                                </h2>
+                                <div id="universityEquipment" class="accordion-collapse collapse" data-bs-parent="#equipmentAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            {% for equipment in equipments %}
+                                                {% if equipment.name == 'Tableau interactif' or equipment.name == 'Ordinateurs' or equipment.name == 'Microscope' or equipment.name == 'Équipement de laboratoire' or equipment.name == 'Bancs d\'expérimentation' %}
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="equipment" value="{{ equipment.id }}" id="equipment{{ equipment.id }}">
+                                                        <label class="form-check-label" for="equipment{{ equipment.id }}">
+                                                            <i class="{{ equipment.icon }}"></i> {{ equipment.name }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Équipements Hôtels -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#hotelEquipment">
+                                        Équipements Hôtels
+                                    </button>
+                                </h2>
+                                <div id="hotelEquipment" class="accordion-collapse collapse" data-bs-parent="#equipmentAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            {% for equipment in equipments %}
+                                                {% if equipment.name == 'Service traiteur' or equipment.name == 'Décoration événementielle' or equipment.name == 'Système de sonorisation' or equipment.name == 'Éclairage d\'ambiance' or equipment.name == 'Service hôtelier' %}
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="equipment" value="{{ equipment.id }}" id="equipment{{ equipment.id }}">
+                                                        <label class="form-check-label" for="equipment{{ equipment.id }}">
+                                                            <i class="{{ equipment.icon }}"></i> {{ equipment.name }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Équipements Sports -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sportEquipment">
+                                        Équipements Sports
+                                    </button>
+                                </h2>
+                                <div id="sportEquipment" class="accordion-collapse collapse" data-bs-parent="#equipmentAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            {% for equipment in equipments %}
+                                                {% if equipment.name == 'Matériel de sport' or equipment.name == 'Tapis de yoga' or equipment.name == 'Miroirs' or equipment.name == 'Barres de danse' or equipment.name == 'Vestiaires' %}
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="equipment" value="{{ equipment.id }}" id="equipment{{ equipment.id }}">
+                                                        <label class="form-check-label" for="equipment{{ equipment.id }}">
+                                                            <i class="{{ equipment.icon }}"></i> {{ equipment.name }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeFilter = document.getElementById('typeFilter');
+    const equipmentFilter = document.getElementById('equipmentFilter');
+    const searchInput = document.getElementById('searchRoom');
+    const tableRows = document.querySelectorAll('tbody tr');
+    const categorySelect = document.getElementById('categorySelect');
+    const roomTypeSelect = document.getElementById('roomTypeSelect');
+    
+    // Données des types de salles par catégorie
+    const roomTypesByCategory = {
+        'enterprise': [
+            { id: '1', name: 'Salle de réunion' },
+            { id: '2', name: 'Salle de conférence' },
+            { id: '3', name: 'Espace coworking' },
+            { id: '4', name: 'Salle de formation' }
+        ],
+        'university': [
+            { id: '5', name: 'Amphithéâtre' },
+            { id: '6', name: 'Salle de TD' },
+            { id: '7', name: 'Laboratoire' },
+            { id: '8', name: 'Salle informatique' }
+        ],
+        'hotel': [
+            { id: '9', name: 'Salle de banquet' },
+            { id: '10', name: 'Salle de réunion hôtel' },
+            { id: '11', name: 'Espace événementiel' },
+            { id: '12', name: 'Salle de séminaire' }
+        ],
+        'sport': [
+            { id: '13', name: 'Salle de sport' },
+            { id: '14', name: 'Salle de danse' },
+            { id: '15', name: 'Salle de yoga' },
+            { id: '16', name: 'Salle de musculation' }
+        ]
+    };
+
+    // Gestion du changement de catégorie
+    categorySelect.addEventListener('change', function() {
+        const selectedCategory = this.value;
+        roomTypeSelect.innerHTML = '<option value="">Sélectionnez un type</option>';
+        
+        if (selectedCategory && roomTypesByCategory[selectedCategory]) {
+            roomTypesByCategory[selectedCategory].forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.id;
+                option.textContent = type.name;
+                roomTypeSelect.appendChild(option);
+            });
+        }
+    });
+
+    function filterRooms() {
+        const selectedType = typeFilter.value;
+        const selectedEquipment = equipmentFilter.value;
+        const searchText = searchInput.value.toLowerCase();
+
+        tableRows.forEach(row => {
+            const typeCell = row.querySelector('td:nth-child(2)');
+            const equipmentCell = row.querySelector('td:nth-child(5)');
+            const nameCell = row.querySelector('td:nth-child(1)');
+            
+            if (!typeCell || !equipmentCell || !nameCell) return;
+
+            const typeMatch = !selectedType || typeCell.textContent.includes(selectedType);
+            const equipmentMatch = !selectedEquipment || equipmentCell.textContent.includes(selectedEquipment);
+            const searchMatch = !searchText || 
+                              nameCell.textContent.toLowerCase().includes(searchText) ||
+                              typeCell.textContent.toLowerCase().includes(searchText) ||
+                              equipmentCell.textContent.toLowerCase().includes(searchText);
+
+            row.style.display = typeMatch && equipmentMatch && searchMatch ? '' : 'none';
+        });
+    }
+
+    typeFilter.addEventListener('change', filterRooms);
+    equipmentFilter.addEventListener('change', filterRooms);
+    searchInput.addEventListener('input', filterRooms);
+});
+</script>
+{% endblock %}
+{% endblock %}

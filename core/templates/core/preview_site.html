@@ -1,0 +1,55 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Aperçu du Site{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Aperçu du Site</h1>
+    
+    <!-- Types de salles -->
+    <section class="mb-5">
+        <h2>Types de Salles</h2>
+        <div class="row">
+            {% for room_type in room_types %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if room_type.image %}
+                    <img src="{{ room_type.image.url }}" class="card-img-top" alt="{{ room_type.name }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ room_type.name }}</h5>
+                        <p class="card-text">{{ room_type.description }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Liste des salles -->
+    <section class="mb-5">
+        <h2>Salles Disponibles</h2>
+        <div class="row">
+            {% for room in rooms %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if room.image %}
+                    <img src="{{ room.image.url }}" class="card-img-top" alt="{{ room.name }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ room.name }}</h5>
+                        <p class="card-text">
+                            <strong>Type:</strong> {{ room.room_type.name }}<br>
+                            <strong>Capacité:</strong> {{ room.capacity }} personnes<br>
+                            <strong>Prix:</strong> {{ room.price_per_hour }}€/heure
+                        </p>
+                        <p class="card-text">{{ room.description }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %} 

@@ -1,0 +1,554 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Utilisateurs - ROOM MANAGER{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gestion des Utilisateurs</h2>
+        <a href="{% url 'core:download_users_list' %}" class="btn btn-primary">
+            <i class="fas fa-download me-2"></i>Télécharger la liste
+        </a>
+    </div>
+    <!-- En-tête avec statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="text-primary mb-3">Gestion des Utilisateurs</h2>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between">
+                        <div class="text-center px-3">
+                            <h6 class="text-muted mb-2">Total</h6>
+                            <span class="badge bg-primary rounded-pill fs-6 px-3">{{ total_users }}</span>
+                        </div>
+                        <div class="text-center px-3">
+                            <h6 class="text-muted mb-2">Actifs</h6>
+                            <span class="badge bg-success rounded-pill fs-6 px-3">{{ active_users }}</span>
+                        </div>
+                        <div class="text-center px-3">
+                            <h6 class="text-muted mb-2">Inactifs</h6>
+                            <span class="badge bg-danger rounded-pill fs-6 px-3">{{ inactive_users }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label text-muted">Statut</label>
+                    <select class="form-select border-0 bg-light" id="statusFilter">
+                        <option value="">Tous les statuts</option>
+                        <option value="active">Actifs</option>
+                        <option value="inactive">Inactifs</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label text-muted">Tri par</label>
+                    <select class="form-select border-0 bg-light" id="sortFilter">
+                        <option value="date_desc">Date d'inscription (récent)</option>
+                        <option value="date_asc">Date d'inscription (ancien)</option>
+                        <option value="name_asc">Nom (A-Z)</option>
+                        <option value="name_desc">Nom (Z-A)</option>
+                        <option value="spent_desc">Total dépensé (élevé)</option>
+                        <option value="spent_asc">Total dépensé (faible)</option>
+                        <option value="bookings_desc">Réservations (élevé)</option>
+                        <option value="bookings_asc">Réservations (faible)</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-muted">Recherche avancée</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control border-0 bg-light" id="searchUser" placeholder="Nom, email, téléphone, ID...">
+                        <button class="btn btn-primary" type="button" id="searchButton">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" type="button" id="resetSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des utilisateurs -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="row g-4">
+                {% for user in users %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="user-card card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <!-- En-tête de la carte -->
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="avatar-circle bg-primary text-white me-3">
+                                    {{ user.username|make_list|first|upper }}
+                                </div>
+                                <div>
+                                    <h5 class="card-title text-primary mb-0">{{ user.username }}</h5>
+                                    <small class="text-muted">ID: {{ user.id }}</small>
+                                </div>
+                            </div>
+
+                            <!-- Informations de contact -->
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-envelope text-muted me-2"></i>
+                                    <span class="text-dark">{{ user.email }}</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-phone text-muted me-2"></i>
+                                    <span class="text-muted">{{ user.phone_number|default:"Pas de téléphone" }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Date d'inscription -->
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-calendar-alt text-muted me-2"></i>
+                                    <span class="text-dark">Inscrit le {{ user.date_joined|date:"d/m/Y" }}</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-clock text-muted me-2"></i>
+                                    <span class="text-muted">Dernière connexion: {{ user.last_login|date:"d/m/Y"|default:"Jamais" }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Statistiques -->
+                            <div class="mb-3">
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="badge bg-info rounded-pill" title="Réservations">
+                                        <i class="fas fa-calendar"></i> {{ user.total_bookings }}
+                                    </span>
+                                    <span class="badge bg-success rounded-pill" title="Paiements">
+                                        <i class="fas fa-euro-sign"></i> {{ user.total_payments }}
+                                    </span>
+                                    <span class="badge bg-warning rounded-pill" title="Total dépensé">
+                                        {{ user.total_spent }}€
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Statut et actions -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                    {{ user.is_active|yesno:"Actif,Inactif" }}
+                                </span>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-start" data-bs-toggle="modal" data-bs-target="#viewUserModal{{ user.id }}" title="Voir détails">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="{% url 'core:edit_user' user.id %}" class="btn btn-sm btn-outline-info" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-end" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ user.id }}" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal pour voir les détails -->
+                <div class="modal fade" id="viewUserModal{{ user.id }}" tabindex="-1" aria-labelledby="viewUserModalLabel{{ user.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-light">
+                                <h5 class="modal-title" id="viewUserModalLabel{{ user.id }}">
+                                    <i class="fas fa-user-circle me-2"></i>Détails de l'utilisateur
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card border-0 shadow-sm mb-3">
+                                            <div class="card-body">
+                                                <h6 class="card-subtitle mb-3 text-primary">
+                                                    <i class="fas fa-info-circle me-2"></i>Informations personnelles
+                                                </h6>
+                                                <div class="mb-2">
+                                                    <small class="text-muted d-block">Nom d'utilisateur</small>
+                                                    <strong>{{ user.username }}</strong>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <small class="text-muted d-block">Email</small>
+                                                    <strong>{{ user.email }}</strong>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <small class="text-muted d-block">Téléphone</small>
+                                                    <strong>{{ user.phone_number|default:"Non renseigné" }}</strong>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <small class="text-muted d-block">Date d'inscription</small>
+                                                    <strong>{{ user.date_joined|date:"d/m/Y H:i" }}</strong>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <small class="text-muted d-block">Dernière connexion</small>
+                                                    <strong>{{ user.last_login|date:"d/m/Y H:i"|default:"Jamais" }}</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card border-0 shadow-sm mb-3">
+                                            <div class="card-body">
+                                                <h6 class="card-subtitle mb-3 text-primary">
+                                                    <i class="fas fa-chart-bar me-2"></i>Statistiques
+                                                </h6>
+                                                <div class="mb-2">
+                                                    <small class="text-muted d-block">Nombre de réservations</small>
+                                                    <strong>{{ user.total_bookings }}</strong>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <small class="text-muted d-block">Nombre de paiements</small>
+                                                    <strong>{{ user.total_payments }}</strong>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <small class="text-muted d-block">Total dépensé</small>
+                                                    <strong>{{ user.total_spent }}€</strong>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <small class="text-muted d-block">Statut</small>
+                                                    <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                                        {{ user.is_active|yesno:"Actif,Inactif" }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-3 text-primary">
+                                            <i class="fas fa-history me-2"></i>Dernières réservations
+                                        </h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th>Date</th>
+                                                        <th>Chambre</th>
+                                                        <th>Statut</th>
+                                                        <th>Montant</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for booking in user.recent_bookings %}
+                                                    <tr>
+                                                        <td>{{ booking.created_at|date:"d/m/Y" }}</td>
+                                                        <td>{{ booking.room.name }}</td>
+                                                        <td>
+                                                            <span class="badge bg-{{ booking.status_color }}">
+                                                                {{ booking.get_status_display }}
+                                                            </span>
+                                                        </td>
+                                                        <td>{{ booking.total_amount }}€</td>
+                                                        <td>
+                                                            {% if booking.status == 'completed' %}
+                                                            <a href="{% url 'core:download_receipt' booking.id %}" class="btn btn-sm btn-outline-primary" title="Télécharger le reçu">
+                                                                <i class="fas fa-file-pdf"></i>
+                                                            </a>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% empty %}
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted">
+                                                            <i class="fas fa-info-circle me-2"></i>Aucune réservation récente
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer bg-light">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-2"></i>Fermer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal pour supprimer -->
+                <div class="modal fade" id="deleteUserModal{{ user.id }}" tabindex="-1" aria-labelledby="deleteUserModalLabel{{ user.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title" id="deleteUserModalLabel{{ user.id }}">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmer la suppression
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="text-center mb-4">
+                                    <i class="fas fa-user-slash text-danger" style="font-size: 3rem;"></i>
+                                </div>
+                                <p class="text-center">
+                                    Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{{ user.username }}</strong> ?
+                                </p>
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    Cette action est irréversible et supprimera toutes les données associées à cet utilisateur.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-2"></i>Annuler
+                                </button>
+                                <form method="post" action="{% url 'core:delete_user' user.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-trash me-2"></i>Supprimer
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Styles personnalisés -->
+<style>
+.avatar-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.4rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-card {
+    transition: all 0.3s ease;
+}
+
+.user-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+}
+
+.btn-group .btn {
+    padding: 0.4rem 0.6rem;
+    border-width: 1px;
+    transition: all 0.2s;
+}
+
+.btn-group .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.5em 0.8em;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+.text-dark {
+    color: #212529 !important;
+}
+
+.bg-primary {
+    background-color: #0d6efd !important;
+}
+
+.badge.bg-primary {
+    background-color: #0d6efd !important;
+}
+
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.badge.bg-info {
+    background-color: #0dcaf0 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000;
+}
+
+/* Animation de chargement */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.user-card {
+    opacity: 0;
+}
+
+/* Styles pour les modals */
+.modal-header {
+    border-bottom: none;
+}
+
+.modal-footer {
+    border-top: none;
+}
+
+.modal-content {
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.modal-body .card {
+    transition: all 0.3s ease;
+}
+
+.modal-body .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+}
+
+.table-sm th {
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.alert-danger {
+    background-color: #fff5f5;
+    border-color: #feb2b2;
+    color: #c53030;
+}
+
+.btn-close-white {
+    filter: brightness(0) invert(1);
+}
+</style>
+
+<!-- JavaScript pour le filtrage -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation des cartes
+    const cards = document.querySelectorAll('.user-card');
+    cards.forEach((card, index) => {
+        setTimeout(() => {
+            card.style.animation = `fadeIn 0.5s ease-out forwards`;
+        }, index * 100);
+    });
+
+    const statusFilter = document.getElementById('statusFilter');
+    const sortFilter = document.getElementById('sortFilter');
+    const searchInput = document.getElementById('searchUser');
+    const searchButton = document.getElementById('searchButton');
+    const resetButton = document.getElementById('resetSearch');
+
+    function filterCards() {
+        const statusValue = statusFilter.value;
+        const searchValue = searchInput.value.toLowerCase();
+        const sortValue = sortFilter.value;
+
+        cards.forEach(card => {
+            const status = card.querySelector('.badge').textContent.toLowerCase();
+            const username = card.querySelector('.card-title').textContent.toLowerCase();
+            const email = card.querySelector('.fa-envelope').nextSibling.textContent.toLowerCase();
+            const phone = card.querySelector('.fa-phone').nextSibling.textContent.toLowerCase();
+            const userId = card.querySelector('small').textContent.toLowerCase();
+
+            const statusMatch = !statusValue || status.includes(statusValue);
+            const searchMatch = !searchValue || 
+                username.includes(searchValue) || 
+                email.includes(searchValue) || 
+                phone.includes(searchValue) ||
+                userId.includes(searchValue);
+
+            card.parentElement.style.display = statusMatch && searchMatch ? '' : 'none';
+        });
+
+        // Tri des cartes
+        const container = document.querySelector('.row');
+        const sortedCards = Array.from(container.children);
+        
+        sortedCards.sort((a, b) => {
+            let aValue, bValue;
+            
+            switch(sortValue) {
+                case 'date_desc':
+                case 'date_asc':
+                    aValue = new Date(a.querySelector('.fa-calendar-alt').nextSibling.textContent);
+                    bValue = new Date(b.querySelector('.fa-calendar-alt').nextSibling.textContent);
+                    return sortValue === 'date_desc' ? bValue - aValue : aValue - bValue;
+                
+                case 'name_asc':
+                case 'name_desc':
+                    aValue = a.querySelector('.card-title').textContent;
+                    bValue = b.querySelector('.card-title').textContent;
+                    return sortValue === 'name_asc' ? 
+                        aValue.localeCompare(bValue) : 
+                        bValue.localeCompare(aValue);
+                
+                case 'spent_desc':
+                case 'spent_asc':
+                    aValue = parseFloat(a.querySelector('.badge:last-child').textContent);
+                    bValue = parseFloat(b.querySelector('.badge:last-child').textContent);
+                    return sortValue === 'spent_desc' ? bValue - aValue : aValue - bValue;
+
+                case 'bookings_desc':
+                case 'bookings_asc':
+                    aValue = parseInt(a.querySelector('.badge:first-child').textContent);
+                    bValue = parseInt(b.querySelector('.badge:first-child').textContent);
+                    return sortValue === 'bookings_desc' ? bValue - aValue : aValue - bValue;
+            }
+        });
+
+        sortedCards.forEach(card => container.appendChild(card));
+    }
+
+    statusFilter.addEventListener('change', filterCards);
+    sortFilter.addEventListener('change', filterCards);
+    searchButton.addEventListener('click', filterCards);
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            filterCards();
+        }
+    });
+    resetButton.addEventListener('click', function() {
+        searchInput.value = '';
+        filterCards();
+    });
+});
+</script>
+
+{% endblock %}

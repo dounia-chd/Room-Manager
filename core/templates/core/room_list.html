@@ -1,0 +1,100 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Salles Disponibles - ROOM MANAGER{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Salles Disponibles</h2>
+        <div class="d-flex">
+            <form method="get" class="d-flex me-2">
+                <select name="type" class="form-select" onchange="this.form.submit()">
+                    <option value="">Tous les types</option>
+                    {% for type in room_types %}
+                        <option value="{{ type.id }}" {% if request.GET.type|add:0 == type.id %}selected{% endif %}>
+                            {{ type.get_category_display }} - {{ type.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+            <form method="get" class="d-flex">
+                <input type="text" name="search" class="form-control me-2" placeholder="Rechercher une salle..." value="{{ search_query|default:'' }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% for room in rooms %}
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 shadow-sm hover-shadow">
+                    <div class="position-relative">
+                        {% if room.image %}
+                            <img src="{{ room.image.url }}" class="card-img-top" alt="{{ room.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-image fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <span class="badge bg-primary">{{ room.room_type.get_category_display }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ room.name }}</h5>
+                        <p class="card-text text-muted">{{ room.description|truncatewords:20 }}</p>
+                        <ul class="list-unstyled mb-3">
+                            <li class="mb-2">
+                                <i class="fas fa-users me-2 text-primary"></i>
+                                <span>{{ room.capacity }} personnes</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-euro-sign me-2 text-primary"></i>
+                                <span>{{ room.price_per_hour }}€/heure</span>
+                            </li>
+                        </ul>
+                        {% if room.equipment.all %}
+                        <div class="mb-3">
+                            <small class="text-muted">Équipements :</small>
+                            <div class="mt-1">
+                                {% for equipment in room.equipment.all|slice:":3" %}
+                                    <i class="{{ equipment.icon }} me-2" title="{{ equipment.name }}"></i>
+                                {% endfor %}
+                                {% if room.equipment.all|length > 3 %}
+                                    <small class="text-muted">+{{ room.equipment.all|length|add:"-3" }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        <a href="{% url 'core:room_detail' room.pk %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-info-circle me-2"></i>Voir les détails
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    {% if search_query %}
+                        <p class="mb-0">Aucune salle ne correspond à votre recherche "{{ search_query }}".</p>
+                    {% else %}
+                        <p class="mb-0">Aucune salle disponible pour le moment.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+</style>
+{% endblock %}

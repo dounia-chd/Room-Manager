@@ -1,0 +1,157 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Mes Réservations - ROOM MANAGER{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Mes Réservations</h2>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col">
+                            <h4>{{ stats.total }}</h4>
+                            <p class="mb-0">Total</p>
+                        </div>
+                        <div class="col">
+                            <h4>{{ stats.pending }}</h4>
+                            <p class="mb-0">En attente</p>
+                        </div>
+                        <div class="col">
+                            <h4>{{ stats.in_progress }}</h4>
+                            <p class="mb-0">En cours</p>
+                        </div>
+                        <div class="col">
+                            <h4>{{ stats.validated }}</h4>
+                            <p class="mb-0">Validées</p>
+                        </div>
+                        <div class="col">
+                            <h4>{{ stats.cancelled }}</h4>
+                            <p class="mb-0">Annulées</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="btn-group" role="group">
+                <a href="{% url 'core:booking_list' %}" class="btn btn-outline-primary {% if not current_status %}active{% endif %}">Tous</a>
+                {% for status_code, status_name in status_choices %}
+                    <a href="?status={{ status_code }}{% if current_date %}&date={{ current_date }}{% endif %}" 
+                       class="btn btn-outline-primary {% if current_status == status_code %}active{% endif %}">
+                        {{ status_name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="btn-group float-end" role="group">
+                <a href="{% url 'core:booking_list' %}{% if current_status %}?status={{ current_status }}{% endif %}" 
+                   class="btn btn-outline-secondary {% if not current_date %}active{% endif %}">Toutes les dates</a>
+                <a href="?date=today{% if current_status %}&status={{ current_status }}{% endif %}" 
+                   class="btn btn-outline-secondary {% if current_date == 'today' %}active{% endif %}">Aujourd'hui</a>
+                <a href="?date=week{% if current_status %}&status={{ current_status }}{% endif %}" 
+                   class="btn btn-outline-secondary {% if current_date == 'week' %}active{% endif %}">Cette semaine</a>
+                <a href="?date=month{% if current_status %}&status={{ current_status }}{% endif %}" 
+                   class="btn btn-outline-secondary {% if current_date == 'month' %}active{% endif %}">Ce mois</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des réservations -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Salle</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Heure</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in bookings %}
+                        <tr>
+                            <td>{{ booking.room.name }}</td>
+                            <td>{{ booking.room.room_type.name }}</td>
+                            <td>{{ booking.date|date:"d/m/Y" }}</td>
+                            <td>{{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</td>
+                            <td>
+                                <span class="badge {% if booking.status == 'pending' %}bg-warning
+                                             {% elif booking.status == 'in_progress' %}bg-info
+                                             {% elif booking.status == 'validated' %}bg-success
+                                             {% elif booking.status == 'cancelled' %}bg-danger
+                                             {% endif %}">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if booking.status == 'pending' %}
+                                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal{{ booking.pk }}">
+                                        <i class="fas fa-times"></i> Annuler
+                                    </button>
+                                {% endif %}
+                                {% if not booking.payment_status and booking.status == 'pending' %}
+                                    <a href="{% url 'core:payment' booking.pk %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-credit-card"></i> Payer
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        <!-- Modal d'annulation -->
+                        <div class="modal fade" id="cancelModal{{ booking.pk }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Confirmer l'annulation</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Êtes-vous sûr de vouloir annuler cette réservation ?</p>
+                                        <p><strong>Salle :</strong> {{ booking.room.name }}</p>
+                                        <p><strong>Date :</strong> {{ booking.date|date:"d/m/Y" }}</p>
+                                        <p><strong>Horaires :</strong> {{ booking.start_time|time:"H:i" }} - {{ booking.end_time|time:"H:i" }}</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                        <form method="post" action="{% url 'core:cancel_booking' booking.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger">Confirmer l'annulation</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                                    <p>Vous n'avez pas encore de réservations.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

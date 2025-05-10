@@ -1,0 +1,53 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Types de Salles - ROOM MANAGER{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <h2 class="mb-4">Types de Salles</h2>
+
+    <div class="row g-4">
+        {% for type in room_types %}
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 shadow-sm hover-shadow">
+                    <div class="position-relative">
+                        {% if type.image %}
+                            <img src="{{ type.image.url }}" class="card-img-top" alt="{{ type.name }}" style="height: 250px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 250px;">
+                                <i class="fas fa-image fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <span class="badge bg-primary">{{ type.get_category_display }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ type.name }}</h5>
+                        <p class="card-text">{{ type.description }}</p>
+                        <a href="{% url 'core:room_list' %}?type={{ type.id }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-door-open me-2"></i>Voir les salles
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <p class="mb-0">Aucun type de salle disponible pour le moment.</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+</style>
+{% endblock %}
